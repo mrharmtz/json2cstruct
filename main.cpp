@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <cctype>
 using namespace std;
 
 
@@ -49,6 +49,42 @@ int Json2CStruct_static_string_t(char* dest, const char* start_stream, const cha
     return 0;
 }
 
+#define Json2CStruct_dict_start_bracket '{'
+#define Json2CStruct_dict_finish_bracket '}'
+#define Json2CStruct_whitespace_char_list " \n\t\r"
+
+int Json2CStruct_is_white_space(const char* c){
+    return isspace(*c);
+}
+
+int Json2CStruct_dict_limits(const char *stream_start, const char *stream_end, const char **start, const char **end){
+
+    int push_counter = 1;
+
+    if(stream_start == stream_end)
+        return -1;
+
+    for (; Json2CStruct_is_white_space(stream_start); ++stream_start);
+    
+    if(Json2CStruct_dict_start_bracket != *stream_start++)
+        return -2;
+
+    *start = stream_start;
+
+    for(; stream_start != stream_end && push_counter > 1; ++stream_start)
+    {
+        if (Json2CStruct_dict_start_bracket == *stream_start)
+            ++push_counter;
+
+        if (Json2CStruct_dict_finish_bracket == *stream_start)
+            --push_counter;
+    }
+    
+    *end = stream_start - 1;
+
+    return 0;
+}
+
 int Json2CStruct_address_t(address_t* dest, const char* start_stream, const char* end_stream){
 
 
@@ -62,7 +98,7 @@ const char* find_eos(const char* stream){
 
     while(*(++stream));
 
-    return stream - 1;
+    return stream;
 }
 
 int main()
@@ -70,8 +106,9 @@ int main()
     address_t address;
     const char *stream = "{ \"streetAddress\": \"21 2nd Street\", \"city\": \"New York\", \"state\": \"NY\", \"postalCode\": \"10021-3100\"}";
     const char *eos = find_eos(stream);
+    const char *object_start, *object_end;
 
-    Json2CStruct_address_t(&address, stream, eos);
+    cout << "completed with " << Json2CStruct_dict_limits(stream, eos, &object_start, &object_end) << endl;
 
     return 0;
 }
